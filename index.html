@@ -55,10 +55,73 @@ select option { color: #000; background: #fff; }
 
 /* background circles */
 .bg-circles { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: -1; }
-.bg-circles span { position: absolute; border-radius: 50%; opacity: 0.06; filter: blur(40px); transform: translateZ(0); }
+.bg-circles span { position: absolute; border-radius: 50%; opacity: 0.06; filter: blur(40px); transform: translateZ(0); transition: opacity 400ms ease; }
 .c1 { width: 420px; height: 420px; left: -80px; top: -120px; background: linear-gradient(45deg,#7c3aed, #00d4ff); }
 .c2 { width: 300px; height: 300px; right: -60px; bottom: -100px; background: linear-gradient(45deg,#ff6b6b,#ffdd55); }
 .c3 { width: 200px; height: 200px; left: 50%; top: 10%; transform: translateX(-50%); background: linear-gradient(45deg,#00ffea,#7c3aed); }
+/* extra colorful glows */
+.c4 { width: 360px; height: 360px; right: 10%; top: -140px; background: linear-gradient(45deg,#ff7bd0,#ffd86b); opacity: 0.05; }
+.c5 { width: 260px; height: 260px; left: -40px; bottom: 10%; background: linear-gradient(45deg,#9bffb3,#6bd6ff); opacity: 0.05; }
+/* large vibrant drifting circles that cross the viewport */
+.c6 { width: 720px; height: 720px; left: -200px; top: -260px; background: radial-gradient(circle at 30% 30%, #ff5ec4, #ffb86b); mix-blend-mode: screen; opacity: 0.06; filter: blur(80px); }
+.c7 { width: 640px; height: 640px; right: -220px; bottom: -240px; background: radial-gradient(circle at 70% 70%, #6be7ff, #7cffb3); mix-blend-mode: screen; opacity: 0.06; filter: blur(78px); }
+.c8 { width: 560px; height: 560px; left: 50%; top: 40%; transform: translateX(-50%); background: radial-gradient(circle at 50% 50%, #b38cff, #7de0ff); mix-blend-mode: screen; opacity: 0.05; filter: blur(72px); }
+
+/* animated gradient for the page background when enabled */
+.animated-bg {
+  /* use theme variables so light/dark themes are respected */
+  --g1: var(--bg1, #0f172a);
+  --g2: var(--bg2, #001219);
+  background: linear-gradient(270deg, var(--g1), color-mix(in srgb, var(--g1) 60%, var(--g2)), var(--g2), var(--g1));
+  background-size: 800% 800%;
+  animation: gradientAnim 16s ease infinite;
+}
+
+@keyframes gradientAnim {
+  0%{ background-position:0% 50%; }
+  50%{ background-position:100% 50%; }
+  100%{ background-position:0% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animated-bg { animation: none !important; background-size: auto !important; }
+  .bg-circles.animated .c1,
+  .bg-circles.animated .c2,
+  .bg-circles.animated .c3 { animation: none !important; }
+}
+
+/* gentle floating for the blurred color circles */
+.bg-circles span { will-change: transform, opacity; }
+.bg-circles.animated .c1 { animation: float1 18s ease-in-out infinite; }
+.bg-circles.animated .c2 { animation: float2 22s ease-in-out infinite; }
+.bg-circles.animated .c3 { animation: float3 20s ease-in-out infinite; }
+.bg-circles.animated .c4 { animation: float4 26s ease-in-out infinite; }
+.bg-circles.animated .c5 { animation: float5 24s ease-in-out infinite; }
+.bg-circles.animated .c6 { animation: drift6 36s linear infinite; }
+.bg-circles.animated .c7 { animation: drift7 34s linear infinite; }
+.bg-circles.animated .c8 { animation: drift8 30s linear infinite; }
+
+@keyframes float1 { 0%{transform:translate(-20px,-10px) } 50%{transform:translate(10px,20px)} 100%{transform:translate(-20px,-10px)} }
+@keyframes float2 { 0%{transform:translate(10px,10px) } 50%{transform:translate(-10px,-20px)} 100%{transform:translate(10px,10px)} }
+@keyframes float3 { 0%{transform:translateY(0)} 50%{transform:translateY(14px)} 100%{transform:translateY(0)} }
+
+/* when animated, make circles more visible */
+.bg-circles.animated span{ opacity: 0.18; filter: blur(34px); }
+
+@keyframes float4 { 0%{transform:translate(-10px,-10px)} 50%{transform:translate(18px,8px)} 100%{transform:translate(-10px,-10px)} }
+@keyframes float5 { 0%{transform:translate(0,6px)} 50%{transform:translate(-16px,-6px)} 100%{transform:translate(0,6px)} }
+
+@keyframes drift6 { 0%{ transform: translate(0,0) } 50%{ transform: translate(420px,380px) } 100%{ transform: translate(0,0) } }
+@keyframes drift7 { 0%{ transform: translate(0,0) } 50%{ transform: translate(-420px,-360px) } 100%{ transform: translate(0,0) } }
+@keyframes drift8 { 0%{ transform: translate(0,0) } 50%{ transform: translate(-280px,320px) } 100%{ transform: translate(0,0) } }
+
+/* stronger glow on the card when animated */
+.animated-bg .card{ box-shadow: 0 20px 60px rgba(2,6,23,0.7), 0 0 120px rgba(124,58,237,0.06); transition: box-shadow 400ms ease; }
+.bg-circles.animated + main .card,
+.bg-circles.animated ~ main .card { box-shadow: 0 22px 70px rgba(2,6,23,0.75), 0 0 160px rgba(124,58,237,0.08); }
+
+/* subtle inner glow for time */
+.time { text-shadow: 0 4px 20px rgba(124,58,237,0.12); }
 
 @media (max-width: 780px) {
   .card { grid-template-columns: 1fr; }
@@ -72,6 +135,11 @@ select option { color: #000; background: #fff; }
   <span class="c1"></span>
   <span class="c2"></span>
   <span class="c3"></span>
+  <span class="c4"></span>
+  <span class="c5"></span>
+  <span class="c6"></span>
+  <span class="c7"></span>
+  <span class="c8"></span>
 </div>
 
 <main class="card" role="main">
@@ -103,6 +171,7 @@ select option { color: #000; background: #fff; }
           <option value="light">Light</option>
         </select>
       </label>
+  <label class="row"><input type="checkbox" id="toggleAnimate"> Animate background</label>
       <label class="row">Clock Font: 
         <select id="fontSelect">
           <option value="'Inter', sans-serif">Inter</option>
@@ -152,8 +221,47 @@ const batteryLevelEl = document.getElementById('batteryLevel');
 const batteryPercentEl = document.getElementById('batteryPercent');
 const themeSelect = document.getElementById('themeSelect');
 const fontSelect = document.getElementById('fontSelect');
+const toggleAnimate = document.getElementById('toggleAnimate');
 const copyBtn = document.getElementById('copyBtn');
 const formatBtn = document.getElementById('formatBtn');
+
+const bgCircles = document.querySelector('.bg-circles');
+
+// Apply saved animation preference
+function applyAnimationPref(enabled){
+  if(enabled){
+    document.body.classList.add('animated-bg');
+    bgCircles.classList.add('animated');
+  }else{
+    document.body.classList.remove('animated-bg');
+    bgCircles.classList.remove('animated');
+  }
+}
+
+// initialize toggle from localStorage
+try{
+  const saved = localStorage.getItem('clock.animateBg');
+  const enabled = saved === null ? false : saved === '1';
+  toggleAnimate.checked = enabled;
+  applyAnimationPref(enabled);
+}catch(e){ /* ignore */ }
+
+toggleAnimate.addEventListener('change', ()=>{
+  const en = toggleAnimate.checked;
+  try{ localStorage.setItem('clock.animateBg', en ? '1' : '0'); }catch(e){}
+  applyAnimationPref(en);
+});
+
+// Respect user's reduced-motion preference: disable animation toggle
+try{
+  const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+  if(mq && mq.matches){
+    toggleAnimate.checked = false;
+    toggleAnimate.disabled = true;
+    applyAnimationPref(false);
+    // optionally show a tooltip or label change — omitted for brevity
+  }
+}catch(e){}
 
 tzEl.textContent = 'Timezone: ' + Intl.DateTimeFormat().resolvedOptions().timeZone;
 localeEl.textContent = 'Locale: ' + (navigator.language || '—');

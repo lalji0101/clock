@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dynamic Clock UI</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Arial+Black&family=Bebas+Neue&family=Comfortaa&family=Courier+New&family=Dosis&family=Fira+Code&family=Lato&family=Montserrat&family=Merriweather&family=Oswald&family=Pacifico&family=Playfair+Display&family=PT+Sans&family=Quicksand&family=Raleway&family=Roboto&family=Roboto+Mono&family=Source+Sans+Pro&family=Times+New+Roman&family=Ubuntu&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg1: #0f172a;
+  --bg2: #001219;
+  --accent: #7c3aed;
+  --muted: rgba(255,255,255,0.75);
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; font-family: 'Inter', sans-serif; }
+body {
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg,var(--bg1), var(--bg2));
+  color: #fff; -webkit-font-smoothing: antialiased;
+}
+.card {
+  width: min(920px, 92%);
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+  border-radius: 18px; padding: 24px; box-shadow: 0 10px 30px rgba(2,6,23,0.6);
+  display: grid; grid-template-columns: 1fr 320px; gap: 20px; align-items: center;
+}
+.clock {
+  display: flex; flex-direction: column; gap: 12px; padding: 14px 18px;
+}
+.time {
+  font-size: clamp(36px, 7vw, 84px); font-weight: 700; letter-spacing: -1px;
+  display: flex; align-items: baseline; gap: 12px;
+}
+.seconds { font-size: 0.4em; opacity: 0.9; }
+.date { color: var(--muted); font-size: 18px; }
+.meta { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.chip { background: rgba(255,255,255,0.03); padding: 8px 12px; border-radius: 999px; font-size: 14px; }
+.panel { padding: 16px; border-left: 1px solid rgba(255,255,255,0.03); }
+.panel h3 { margin: 0 0 12px 0; font-size: 18px; }
+.battery { display: flex; align-items: center; gap: 12px; margin: 8px 0 18px 0; }
+.battery .bar { width: 120px; height: 18px; border-radius: 6px; background: rgba(255,255,255,0.06); overflow: hidden; position: relative; }
+.battery .level { height: 100%; width: 50%; transition: width 400ms ease, background 400ms ease; }
+.battery .percent { min-width: 48px; text-align: right; font-size: 14px; }
+
+.controls { display: flex; flex-direction: column; gap: 12px; }
+label { font-size: 13px; color: var(--muted); }
+.row { display: flex; gap: 8px; align-items: center; }
+
+button { padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; background: var(--accent); color: #fff; font-size: 13px; transition: 0.2s; }
+button:hover { opacity: 0.85; }
+select { padding: 4px 6px; border-radius: 6px; border: 1px solid var(--muted); background: transparent; color: inherit; font-size: 13px; }
+select option { color: #000; background: #fff; }
+
+/* background circles */
+.bg-circles { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: -1; }
+.bg-circles span { position: absolute; border-radius: 50%; opacity: 0.06; filter: blur(40px); transform: translateZ(0); }
+.c1 { width: 420px; height: 420px; left: -80px; top: -120px; background: linear-gradient(45deg,#7c3aed, #00d4ff); }
+.c2 { width: 300px; height: 300px; right: -60px; bottom: -100px; background: linear-gradient(45deg,#ff6b6b,#ffdd55); }
+.c3 { width: 200px; height: 200px; left: 50%; top: 10%; transform: translateX(-50%); background: linear-gradient(45deg,#00ffea,#7c3aed); }
+
+@media (max-width: 780px) {
+  .card { grid-template-columns: 1fr; }
+  .panel { border-left: none; border-top: 1px solid rgba(255,255,255,0.03); padding-top: 18px; }
+}
+</style>
+</head>
+<body>
+
+<div class="bg-circles" aria-hidden="true">
+  <span class="c1"></span>
+  <span class="c2"></span>
+  <span class="c3"></span>
+</div>
+
+<main class="card" role="main">
+  <section class="clock" aria-label="Clock">
+    <div class="time" id="time">--:--:<span class="seconds">--</span></div>
+    <div class="date" id="date">Loading date…</div>
+    <div class="meta">
+      <div class="chip" id="timezone">Timezone: —</div>
+      <div class="chip" id="locale">Locale: —</div>
+      <div class="chip" id="ampm">24h</div>
+    </div>
+  </section>
+
+  <aside class="panel" aria-label="Battery & Settings">
+    <h3>Battery & Settings</h3>
+    <div class="battery" aria-live="polite">
+      <div style="flex:1; display:flex; align-items:center; gap:10px;">
+        <div class="bar" aria-hidden="true"><div class="level" id="batteryLevel"></div></div>
+        <div class="percent" id="batteryPercent">--%</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <label class="row"><input type="checkbox" id="toggleSeconds" checked> Show seconds</label>
+      <label class="row"><input type="checkbox" id="toggle24h" checked> 24-hour format</label>
+      <label class="row">Theme: 
+        <select id="themeSelect">
+          <option value="dark">Dark</option>
+          <option value="light">Light</option>
+        </select>
+      </label>
+      <label class="row">Clock Font: 
+        <select id="fontSelect">
+          <option value="'Inter', sans-serif">Inter</option>
+          <option value="'Roboto', sans-serif">Roboto</option>
+          <option value="'Segoe UI', sans-serif">Segoe UI</option>
+          <option value="'Courier New', monospace">Courier New</option>
+          <option value="'Times New Roman', serif">Times New Roman</option>
+          <option value="'Ubuntu', sans-serif">Ubuntu</option>
+          <option value="'Montserrat', sans-serif">Montserrat</option>
+          <option value="'Lato', sans-serif">Lato</option>
+          <option value="'Oswald', sans-serif">Oswald</option>
+          <option value="'Poppins', sans-serif">Poppins</option>
+          <option value="'Raleway', sans-serif">Raleway</option>
+          <option value="'Merriweather', serif">Merriweather</option>
+          <option value="'Fira Code', monospace">Fira Code</option>
+          <option value="'Dosis', sans-serif">Dosis</option>
+          <option value="'Playfair Display', serif">Playfair Display</option>
+          <option value="'PT Sans', sans-serif">PT Sans</option>
+          <option value="'Bebas Neue', cursive">Bebas Neue</option>
+          <option value="'Cinzel', serif">Cinzel</option>
+          <option value="'Comfortaa', cursive">Comfortaa</option>
+          <option value="'Mukta', sans-serif">Mukta</option>
+          <option value="'Pacifico', cursive">Pacifico</option>
+          <option value="'Quicksand', sans-serif">Quicksand</option>
+          <option value="'Roboto Mono', monospace">Roboto Mono</option>
+          <option value="'Source Sans Pro', sans-serif">Source Sans Pro</option>
+          <option value="'Arial Black', sans-serif">Arial Black</option>
+        </select>
+      </label>
+      <div style="display:flex; gap:8px; margin-top:6px">
+        <button id="copyBtn">Copy time</button>
+        <button id="formatBtn">Toggle 12/24</button>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<script>
+const timeEl = document.getElementById('time');
+const dateEl = document.getElementById('date');
+const tzEl = document.getElementById('timezone');
+const localeEl = document.getElementById('locale');
+const ampmEl = document.getElementById('ampm');
+const secondsToggle = document.getElementById('toggleSeconds');
+const formatToggle = document.getElementById('toggle24h');
+const batteryLevelEl = document.getElementById('batteryLevel');
+const batteryPercentEl = document.getElementById('batteryPercent');
+const themeSelect = document.getElementById('themeSelect');
+const fontSelect = document.getElementById('fontSelect');
+const copyBtn = document.getElementById('copyBtn');
+const formatBtn = document.getElementById('formatBtn');
+
+tzEl.textContent = 'Timezone: ' + Intl.DateTimeFormat().resolvedOptions().timeZone;
+localeEl.textContent = 'Locale: ' + (navigator.language || '—');
+
+function pad(n){ return n.toString().padStart(2,'0'); }
+
+function updateClock(){
+  const now = new Date();
+  let hours = now.getHours();
+  const minutes = now.getMinutes();
+  const seconds = now.getSeconds();
+  const use24 = formatToggle.checked;
+
+  let displayHours = hours;
+  let ampm = '';
+  if(!use24){ ampm = hours>=12?'PM':'AM'; displayHours = hours%12||12; }
+
+  timeEl.innerHTML = pad(displayHours) + ':' + pad(minutes) + (secondsToggle.checked ? ':' : ':') + (secondsToggle.checked ? '<span class="seconds">'+pad(seconds)+'</span>':'');
+  ampmEl.textContent = use24 ? '24h' : '12h ('+ampm+')';
+  dateEl.textContent = now.toLocaleDateString(undefined,{weekday:'short',year:'numeric',month:'short',day:'numeric'});
+}
+
+// Battery gradient 0%-100% red->green
+async function initBattery(){
+  if('getBattery' in navigator){
+    try{
+      const bat = await navigator.getBattery();
+      function updateFromAPI(){ setBatteryUI(Math.round(bat.level*100)); }
+      bat.addEventListener('levelchange', updateFromAPI);
+      bat.addEventListener('chargingchange', updateFromAPI);
+      updateFromAPI();
+    }catch(e){}
+  }
+}
+
+function setBatteryUI(percent){
+  const clamped = Math.max(0, Math.min(100, Math.round(percent)));
+  batteryLevelEl.style.width = clamped+'%';
+  batteryPercentEl.textContent = clamped+'%';
+  const hue = Math.round((clamped / 100) * 120); // 0=red, 120=green
+  batteryLevelEl.style.background = `hsl(${hue}, 80%, 50%)`;
+}
+
+copyBtn.addEventListener('click', async ()=>{
+  try{
+    await navigator.clipboard.writeText(timeEl.innerText.replace(/\n/g,' '));
+    copyBtn.textContent='Copied!';
+    setTimeout(()=>copyBtn.textContent='Copy time',1200);
+  }catch(e){copyBtn.textContent='Copy failed'; setTimeout(()=>copyBtn.textContent='Copy time',1200);}
+});
+
+formatBtn.addEventListener('click', ()=>{ formatToggle.checked = !formatToggle.checked; updateClock(); });
+
+// Theme toggle
+themeSelect.addEventListener('change', ()=>{
+  if(themeSelect.value==='light'){
+    document.documentElement.style.setProperty('--bg1','#e6f0ff');
+    document.documentElement.style.setProperty('--bg2','#f7fbff');
+    document.documentElement.style.setProperty('--accent','#3b82f6');
+    document.documentElement.style.setProperty('--muted','rgba(0,0,0,0.6)');
+    document.body.style.color='#071426';
+  }else{
+    document.documentElement.style.setProperty('--bg1','#0f172a');
+    document.documentElement.style.setProperty('--bg2','#001219');
+    document.documentElement.style.setProperty('--accent','#7c3aed');
+    document.documentElement.style.setProperty('--muted','rgba(255,255,255,0.75)');
+    document.body.style.color='#fff';
+  }
+});
+
+// Apply font to entire UI
+fontSelect.addEventListener('change', ()=>{
+  document.body.style.fontFamily = fontSelect.value;
+});
+
+updateClock();
+setInterval(updateClock,1000);
+initBattery();
+</script>
+</body>
+</html>
